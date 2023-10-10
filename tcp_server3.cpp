@@ -13,7 +13,7 @@
 using namespace std;
 
 
-static const uint16_t PORT = 10001;
+static const uint16_t PORT = 20101;
 
 
 struct ClientInfo {
@@ -24,6 +24,13 @@ struct ClientInfo {
 
 int main() {
   int serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+  // port 를 재사용할 수 있도록 옵션 설정
+  int on = 1;
+  if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0) {
+    cerr << "setsockopt() failed: " << strerror(errno) << endl;
+    return 1;
+  }
 
   // 특정 TCP port 에 bind
   struct sockaddr_in sin;
@@ -44,7 +51,7 @@ int main() {
 
   // 현재 연결된 client sockets (= active sockets)
   map<int, ClientInfo> clientSocks;
-  
+
   while (true) {
     // I/O multiplexing 함수인 select() 호출을 위한 자료 구조(fd_set) 변수를 준비함
     // 우리는 읽기 이벤트만 처리할 예정이므로 fd_set rset 하나만 둠
@@ -115,7 +122,7 @@ int main() {
         cerr << "recv() failed: " << strerror(errno) << ", clientSock: " << clientSock << endl;
         willClose.insert(clientSock);
       } else {
-        cout << "Received: " << numRecv << "bytes, clientSock" << clientSock << endl;
+        cout << "Received: " << numRecv << " bytes, clientSock: " << clientSock << endl;
         info.last = time(NULL);
 
         // 읽은 데이터를 그대로 돌려준다.
@@ -128,7 +135,7 @@ int main() {
             willClose.insert(clientSock);
             break;
           } else {
-            cout << "Sent: " << numSend << "bytes, clientSock: " << clientSock << endl;
+            cout << "Sent: " << numSend << " bytes, clientSock: " << clientSock << endl;
             offset += numSend;
           }
         }
